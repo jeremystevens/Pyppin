@@ -28,7 +28,6 @@ import math
 import os
 import json
 import datetime
-
 # Current Chatbot Version 
 __version__ = '0.01'
 
@@ -47,8 +46,8 @@ def respond(user_input):
     # Define a list of keywords and their corresponding responses
     keywords = [
         (["hello"], ["Hi There", "Hello"]),
-        (["hi"], ["Hello!", "Hi there!"]),
-        (["name"], ["My name is {CHAT_BOT}.", "I'm {CHATBOT}."]),
+        (["hi"], ["Hello!", "Hi there!"]), 
+        (["name"], [f"My name is {CHAT_BOT}.", f"I'm {CHAT_BOT}."]),
         (["lol"], ["hahah!!", "hilarious"]),
         (["meaning"], ["I'm sorry, I don't know the meaning of that word."]),
         (["bye"], ["Goodbye!", "Bye!", "soo long", "see you later"]),
@@ -60,7 +59,8 @@ def respond(user_input):
         (["version"], [f"The current version of the chatbot is {__version__}."]),
         (["joke"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
-        (["date"], [datetime.datetime.now().strftime("%B %d, %Y")])  # Add this line for date
+        (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
+        (["how", "are", "you"], ["I'm doing well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
     ]
     
     # Define a list of individual keywords to check for
