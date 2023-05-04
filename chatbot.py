@@ -1,24 +1,24 @@
-#MIT License
+# MIT License
 
-#Copyright (c) 2023 - Jeremy Stevens
+# Copyright (c) 2023 - Jeremy Stevens
 
-#Permission is hereby granted, free of charge, to any person obtaining a copy
-#of this software and associated documentation files (the "Software"), to deal
-#in the Software without restriction, including without limitation the rights
-#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#copies of the Software, and to permit persons to whom the Software is
-#furnished to do so, subject to the following conditions:
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 
-#The above copyright notice and this permission notice shall be included in all
-#copies or substantial portions of the Software.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#SOFTWARE.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 import nltk
 from nltk.tokenize import word_tokenize
@@ -28,8 +28,10 @@ import math
 import os
 import json
 import datetime
-# Current Chatbot Version 
-__version__ = '0.01'
+import wikipedia
+
+# Current Chatbot Version
+__version__ = '0.0.2'
 
 # ChatBot Name
 CHAT_BOT = "Pyppin"
@@ -42,15 +44,16 @@ def respond(user_input):
     global city
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
-    
+
     # Define a list of keywords and their corresponding responses
     keywords = [
         (["hello"], ["Hi There", "Hello"]),
-        (["hi"], ["Hello!", "Hi there!"]), 
+        (["hi"], ["Hello!", "Hi there!"]),
+        (["thank you", "thanks"], ["you are welcome"]),
         (["name"], [f"My name is {CHAT_BOT}.", f"I'm {CHAT_BOT}."]),
         (["lol"], ["hahah!!", "hilarious"]),
         (["meaning"], ["I'm sorry, I don't know the meaning of that word."]),
-        (["bye"], ["Goodbye!", "Bye!", "soo long", "see you later"]),
+        (["bye", "goodbye", "good bye"], ["Goodbye!", "Bye!", "soo long", "see you later"]),
         (["asshole", "fucker", "cunt", "bitch", "slut", "ass", "arse", "bastard"],
          ["that's not nice", "that's rude", "please don't swear at me"]),
         (["fuck"], ["please use appropriate language"]),
@@ -60,15 +63,16 @@ def respond(user_input):
         (["joke"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
-        (["how", "are", "you"], ["I'm doing well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
+        (["how", "are", "you"],["I'm doing well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
     ]
-    
+
     # Define a list of individual keywords to check for
     individual_keywords = [
         "weather",
-        "clear screen"
+        "clear screen",
+        "wikipedia"
     ]
-    
+
     # Check for individual keywords
     for token in tokens:
         if token in individual_keywords:
@@ -80,7 +84,7 @@ def respond(user_input):
                     data = response.json()
                     # Extract the relevant weather information from the JSON response
                     temperature_k = data['main']['temp']
-                    temperature_f = math.ceil((9/5) * (temperature_k - 273) + 32)
+                    temperature_f = math.ceil((9 / 5) * (temperature_k - 273) + 32)
                     humidity = data['main']['humidity']
                     description = data['weather'][0]['description']
                     return f'The weather in {city} is {description} with a temperature of {temperature_f} °F and a humidity of {humidity}%.'
@@ -89,8 +93,12 @@ def respond(user_input):
             elif token == "clear screen":
                 os.system('cls')
                 return f'clearing screen'
-            
-    for phrase in [" ".join(tokens[i:i+2]) for i in range(len(tokens) - 1)] + tokens:
+            elif token == "wikipedia":
+                search = input("What would you like to search for")
+                results = wikipedia.summary(search)
+                return results
+
+    for phrase in [" ".join(tokens[i:i + 2]) for i in range(len(tokens) - 1)] + tokens:
         for keyword, responses in keywords:
             if phrase in keyword:
                 # If a keyword is found, return a random response from its corresponding list
@@ -110,17 +118,17 @@ def respond(user_input):
                         return "Sorry, I couldn't retrieve a joke right now. Please try again later."
                 else:
                     return random.choice(responses)
-                
-                # Get Date 
+
+                # Get Date
                 if phrase == "date":
                     now = datetime.now()
                     return now.strftime("%B %d, %Y")
-                
+
                 # Get the Time
                 if phrase == "time":
                     now = datetime.now()
                     return now.strftime("%I:%M %p")
-            
+
     # If no keyword is found, return a generic response
     return "I'm sorry, I didn't understand what you said."
 
