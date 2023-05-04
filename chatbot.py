@@ -37,7 +37,7 @@ __version__ = '0.0.2'
 CHAT_BOT = "Pyppin"
 
 # Replace YOUR_API_KEY with your actual API key
-api_key = '97e6444e2a92ef22d442a7270259a8d8'
+api_key = 'API_Key_here'
 
 # Define a function to take user input and return a response
 def respond(user_input):
