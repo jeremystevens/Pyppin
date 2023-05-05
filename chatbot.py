@@ -37,7 +37,7 @@ __version__ = '0.0.2'
 CHAT_BOT = "Pyppin"
 
 # Replace YOUR_API_KEY with your actual API key
-api_key = 'API_Key_here'
+api_key = '97e6444e2a92ef22d442a7270259a8d8'
 
 # Define a function to take user input and return a response
 def respond(user_input):
@@ -59,7 +59,7 @@ def respond(user_input):
         (["fuck"], ["please use appropriate language"]),
         (["shit"], ["please use appropriate language"]),
         (["how old"], ["As an artificial intelligence language model, I don't have an age in the traditional sense."]),
-        (["version"], [f"The current version of the chatbot is {__version__}."]),
+        (["version"], [f"{CHAT_BOT} version --> {__version__}"]),
         (["joke"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
@@ -70,7 +70,8 @@ def respond(user_input):
     individual_keywords = [
         "weather",
         "clear screen",
-        "wikipedia"
+        "wikipedia",
+        "google"
     ]
 
     # Check for individual keywords
@@ -94,9 +95,18 @@ def respond(user_input):
                 os.system('cls')
                 return f'clearing screen'
             elif token == "wikipedia":
-                search = input("What would you like to search for")
+                search = input("What would you like to search for:")
                 results = wikipedia.summary(search)
                 return results
+            elif token == "google":
+                from googlesearch import search
+                query = input("what would you like to search for: ")
+                search_results = []
+                for j in search(query, tld="co.in", num=10, stop=10, pause=2):
+                    search_results.append(j)
+                return "\n".join(search_results)
+
+
 
     for phrase in [" ".join(tokens[i:i + 2]) for i in range(len(tokens) - 1)] + tokens:
         for keyword, responses in keywords:
@@ -113,7 +123,7 @@ def respond(user_input):
                             return f"{setup}\n{punchline}"
                         else:
                             return f"Failed to retrieve joke. Error code: {response.status_code}"
-                    # catch request execption ex. no internet connection
+                    # catch request exception ex. no internet connection
                     except requests.exceptions.RequestException:
                         return "Sorry, I couldn't retrieve a joke right now. Please try again later."
                 else:
