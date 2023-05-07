@@ -29,19 +29,56 @@ import os
 import json
 import datetime
 import wikipedia
+from googlesearch import search
 
 # Current Chatbot Version
-__version__ = '0.0.2'
+__version__ = '0.0.2-R1'
 
 # ChatBot Name
 CHAT_BOT = "Pyppin"
 
 # Replace YOUR_API_KEY with your actual API key
-api_key = '97e6444e2a92ef22d442a7270259a8d8'
+api_key = 'API_key_here'
 
-# Define a function to take user input and return a response
+
+def handle_weather():
+    city = input("Enter the City Name: ")
+    url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}'
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        temperature_k = data['main']['temp']
+        temperature_f = math.ceil((9 / 5) * (temperature_k - 273) + 32)
+        humidity = data['main']['humidity']
+        description = data['weather'][0]['description']
+        return f'The weather in {city} is {description} with a temperature of {temperature_f} °F and a humidity of {humidity}%.'
+
+    return f'Request failed with error code {response.status_code}.'
+
+
+def handle_clear_screen():
+    os.system('cls')
+    return f'clearing screen'
+
+
+def handle_wikipedia_search():
+    search_query = input("What would you like to search for: ")
+    results = wikipedia.summary(search_query)
+    return results
+
+
+def handle_google_search():
+    query = input("what would you like to search for: ")
+    search_results = []
+
+    for j in search(query, tld="co.in", num=10, stop=10, pause=2):
+        search_results.append(j)
+
+    return "\n".join(search_results)
+
+
 def respond(user_input):
-    global city
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
 
@@ -63,7 +100,8 @@ def respond(user_input):
         (["joke"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
-        (["how", "are", "you"],["I'm doing well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
+        (["how", "are", "you"],
+         ["I'm doing well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
     ]
 
     # Define a list of individual keywords to check for
@@ -78,36 +116,15 @@ def respond(user_input):
     for token in tokens:
         if token in individual_keywords:
             if token == "weather":
-                city = input("Enter the City Name: ")
-                url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}'
-                response = requests.get(url)
-                if response.status_code == 200:
-                    data = response.json()
-                    # Extract the relevant weather information from the JSON response
-                    temperature_k = data['main']['temp']
-                    temperature_f = math.ceil((9 / 5) * (temperature_k - 273) + 32)
-                    humidity = data['main']['humidity']
-                    description = data['weather'][0]['description']
-                    return f'The weather in {city} is {description} with a temperature of {temperature_f} °F and a humidity of {humidity}%.'
-                else:
-                    return f'Request failed with error code {response.status_code}.'
+                return handle_weather()
             elif token == "clear screen":
-                os.system('cls')
-                return f'clearing screen'
+                return handle_clear_screen()
             elif token == "wikipedia":
-                search = input("What would you like to search for:")
-                results = wikipedia.summary(search)
-                return results
+                return handle_wikipedia_search()
             elif token == "google":
-                from googlesearch import search
-                query = input("what would you like to search for: ")
-                search_results = []
-                for j in search(query, tld="co.in", num=10, stop=10, pause=2):
-                    search_results.append(j)
-                return "\n".join(search_results)
+                return handle_google_search()
 
-
-
+    # The rest of your respond() function
     for phrase in [" ".join(tokens[i:i + 2]) for i in range(len(tokens) - 1)] + tokens:
         for keyword, responses in keywords:
             if phrase in keyword:
@@ -141,7 +158,6 @@ def respond(user_input):
 
     # If no keyword is found, return a generic response
     return "I'm sorry, I didn't understand what you said."
-
 
 # Prompt the user for input and get a response from the chatbot
 city = None
