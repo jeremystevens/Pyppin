@@ -30,17 +30,40 @@ import json
 import datetime
 import wikipedia
 from googlesearch import search
-
+from tqdm import tqdm
+import time
 # Current Chatbot Version
-__version__ = '0.0.2-R1'
+__version__ = '0.0.3'
 
 # ChatBot Name
 CHAT_BOT = "Pyppin"
 
-# Replace YOUR_API_KEY with your actual API key
-api_key = 'API_key_here'
+# Replace Your OpenWeathermap.org API Key
+api_key = 'API_KEY_HERE'
+# Replace this with your actual NewsAPI key
+NEWS_API_KEY = 'API_KEY_HERE'
 
+# fetch News articles
+def fetch_news(query):
+    url = f'https://newsapi.org/v2/everything?q={query}&apiKey={NEWS_API_KEY}'
+    response = requests.get(url)
 
+    if response.status_code == 200:
+        data = response.json()
+        articles = data['articles']
+        if articles:
+            results = []
+            for article in tqdm(articles[:5], desc="Fetching news", ncols=80):  # Limit to the first 5 articles
+                title = article['title']
+                url = article['url']
+                results.append(f"{title}\n{url}\n")
+            return "\n".join(results)
+        else:
+            return f"No news articles found for '{query}'."
+    else:
+        return f"Failed to fetch news articles. Error code: {response.status_code}"
+
+# Fetch the weather
 def handle_weather():
     city = input("Enter the City Name: ")
     url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}'
@@ -64,6 +87,9 @@ def handle_clear_screen():
 
 def handle_wikipedia_search():
     search_query = input("What would you like to search for: ")
+    # Show progress bar
+    for _ in tqdm(range(100), desc="Searching Wikipedia"):
+        time.sleep(0.01)
     results = wikipedia.summary(search_query)
     return results
 
@@ -71,7 +97,9 @@ def handle_wikipedia_search():
 def handle_google_search():
     query = input("what would you like to search for: ")
     search_results = []
-
+    # Show progress bar
+    for _ in tqdm(range(100), desc="Searching Google"):
+        time.sleep(0.01)
     for j in search(query, tld="co.in", num=10, stop=10, pause=2):
         search_results.append(j)
 
@@ -98,6 +126,7 @@ def respond(user_input):
         (["how old"], ["As an artificial intelligence language model, I don't have an age in the traditional sense."]),
         (["version"], [f"{CHAT_BOT} version --> {__version__}"]),
         (["joke"], []),
+        (["news"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
         (["how", "are", "you"],
@@ -129,6 +158,9 @@ def respond(user_input):
         for keyword, responses in keywords:
             if phrase in keyword:
                 # If a keyword is found, return a random response from its corresponding list
+                if phrase == "news":
+                    search = input("What topic would you like news about? ")
+                    return fetch_news(search)
                 if phrase == "joke":
                     try:
                         url = "https://official-joke-api.appspot.com/random_joke"
