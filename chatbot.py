@@ -34,10 +34,10 @@ from tqdm import tqdm
 import time
 
 # Current Chatbot Version
-__version__ = '0.0.4'
+__version__ = '0.0.4-R1'
 
 '''
- Version 0.0.4 Changelog
+ Version 0.0.4-Rev 1 Changelog
  ------------------------------- 
  Added fetch quotes from Quotes Garden
  Added Fetch random Cat Facts 
@@ -74,7 +74,7 @@ command_descriptions = [
 # Fetch a Random Quote from Quote Garden.
 def get_random_quote():
     try:
-        url = "https://quote-garden.onrender.com/api/v3/quotes"
+        url = "https://quote-garden.onrender.com/api/v3/quotes/random"
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
