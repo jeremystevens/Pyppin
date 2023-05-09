@@ -32,16 +32,74 @@ import wikipedia
 from googlesearch import search
 from tqdm import tqdm
 import time
+
 # Current Chatbot Version
-__version__ = '0.0.3'
+__version__ = '0.0.4'
+
+'''
+ Version 0.0.4 Changelog
+ ------------------------------- 
+ Added fetch quotes from Quotes Garden
+ Added Fetch random Cat Facts 
+ Added Commands List for all available API's and other userful commands 
+ Fixed the exit command to exit the program. 
+---------------------------------
+'''
 
 # ChatBot Name
 CHAT_BOT = "Pyppin"
 
 # Replace Your OpenWeathermap.org API Key
-api_key = 'API_KEY_HERE'
+api_key = 'API_key_here'
 # Replace this with your actual NewsAPI key
-NEWS_API_KEY = 'API_KEY_HERE'
+NEWS_API_KEY = 'API_key_here'
+
+
+# Define a list of command keywords to help the user.
+command_descriptions = [
+    "Commands List \n",
+    "weather: Fetches the current weather for a specified city.",
+    "wikipedia: Searches Wikipedia for a specified topic.",
+    "google: Performs a Google search for a specified query.",
+    "joke: Tells a random joke.",
+    "quote: Provides a random quote.",
+    "news: Fetches the latest news articles based on a user-specified topic.",
+    "cat_fact: Provides a random cat fact.",
+    "date: Get the current date mm/dd/yyyy format",
+    "time: Get the current time in hh/mm/ss format",
+    "version: Get the Version of pyppin you are running",
+    "exit(): Exits the chatbot."
+]
+
+# Fetch a Random Quote from Quote Garden.
+def get_random_quote():
+    try:
+        url = "https://quote-garden.onrender.com/api/v3/quotes"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            quote_text = data['data'][0]['quoteText']
+            quote_author = data['data'][0]['quoteAuthor']
+            return f'"{quote_text}" - {quote_author}'
+        else:
+            return "Sorry, I couldn't fetch a quote right now."
+    except requests.exceptions.RequestException as e:
+        # Log the error for debugging purposes
+        print(f"Error occurred: {e}")
+        return "Sorry, I couldn't fetch a quote right now."
+
+# Grab a Random Cat Fact
+def get_random_cat_fact():
+    try:
+        response = requests.get('https://catfact.ninja/fact')
+        if response.status_code == 200:
+            data = response.json()
+            return data['fact']
+        else:
+            return f"Failed to retrieve cat fact. Error code: {response.status_code}"
+    except requests.exceptions.RequestException:
+        return "Sorry, I couldn't retrieve a cat fact right now. Please try again later."
+
 
 # fetch News articles
 def fetch_news(query):
@@ -62,6 +120,7 @@ def fetch_news(query):
             return f"No news articles found for '{query}'."
     else:
         return f"Failed to fetch news articles. Error code: {response.status_code}"
+
 
 # Fetch the weather
 def handle_weather():
@@ -109,7 +168,6 @@ def handle_google_search():
 def respond(user_input):
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
-
     # Define a list of keywords and their corresponding responses
     keywords = [
         (["hello"], ["Hi There", "Hello"]),
@@ -117,6 +175,8 @@ def respond(user_input):
         (["thank you", "thanks"], ["you are welcome"]),
         (["name"], [f"My name is {CHAT_BOT}.", f"I'm {CHAT_BOT}."]),
         (["lol"], ["hahah!!", "hilarious"]),
+        (["cool"], ["yeah it is cool!", "I know right!?"]),
+        (["awesome", "awsome"], ["yes it is!", "I know right!?"]),
         (["meaning"], ["I'm sorry, I don't know the meaning of that word."]),
         (["bye", "goodbye", "good bye"], ["Goodbye!", "Bye!", "soo long", "see you later"]),
         (["asshole", "fucker", "cunt", "bitch", "slut", "ass", "arse", "bastard"],
@@ -125,12 +185,15 @@ def respond(user_input):
         (["shit"], ["please use appropriate language"]),
         (["how old"], ["As an artificial intelligence language model, I don't have an age in the traditional sense."]),
         (["version"], [f"{CHAT_BOT} version --> {__version__}"]),
+        (["commands"], [", ".join(command_descriptions)]),  # Add this line for commands
         (["joke"], []),
         (["news"], []),
+        (["quote"], [get_random_quote()]),
+        (["cat fact"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
         (["how", "are", "you"],
-         ["I'm doing well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
+         ["I'm doinhg well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
     ]
 
     # Define a list of individual keywords to check for
@@ -153,10 +216,17 @@ def respond(user_input):
             elif token == "google":
                 return handle_google_search()
 
+
     # The rest of your respond() function
     for phrase in [" ".join(tokens[i:i + 2]) for i in range(len(tokens) - 1)] + tokens:
         for keyword, responses in keywords:
             if phrase in keyword:
+                # show commands and brief desc.
+                if phrase == "commands":
+                    return "\n".join(command_descriptions)
+                # if cat fact return cat fact obviously
+                if phrase == "cat fact":
+                    return get_random_cat_fact()
                 # If a keyword is found, return a random response from its corresponding list
                 if phrase == "news":
                     search = input("What topic would you like news about? ")
@@ -191,9 +261,18 @@ def respond(user_input):
     # If no keyword is found, return a generic response
     return "I'm sorry, I didn't understand what you said."
 
+
 # Prompt the user for input and get a response from the chatbot
 city = None
 while True:
     user_input = input("You: ")
+    if user_input.lower() == "exit()":
+        answer = input("Chatbot: are you sure you want to quit ? y / n? ")
+        if answer.lower() == "y":
+            print("Chatbot: Goodbye! See you Next time")
+            break
+        else:
+            print("Chatbot: I will not quit yet")
+            continue
     response = respond(user_input)
     print("Chatbot:", response)
