@@ -119,8 +119,8 @@ def respond(user_input):
         (["news"], []),
         (["quote"], [get_random_quote()]),
         (["cat fact"], []),
-        (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
-        (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
+        (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),
+        (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),
         (["how", "are", "you"],
          ["I'm doinhg well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
     ]
@@ -175,16 +175,6 @@ def respond(user_input):
                         return "Sorry, I couldn't retrieve a joke right now. Please try again later."
                 else:
                     return random.choice(responses)
-
-                # Get Date
-                if phrase == "date":
-                    now = datetime.now()
-                    return now.strftime("%B %d, %Y")
-
-                # Get the Time
-                if phrase == "time":
-                    now = datetime.now()
-                    return now.strftime("%I:%M %p")
 
     # If no keyword is found, return a generic response
     return "I'm sorry, I didn't understand what you said."
