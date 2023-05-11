@@ -1,6 +1,24 @@
 import requests
 
+"""
+This module contains a function to fetch a random quote.
+
+The function uses the Quotable API.
+
+Functions:
+get_random_quote: Fetches a random quote.
+"""
+
 def get_random_quote():
+    """
+       Fetches a random quote.
+
+       Args:
+       api_key (str): Quotable API key.
+
+       Returns:
+       str: A string containing the random quote, or an error message.
+       """
     try:
         url = "https://quote-garden.onrender.com/api/v3/quotes/random"
         response = requests.get(url)

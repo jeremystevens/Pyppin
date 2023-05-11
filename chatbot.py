@@ -35,13 +35,16 @@ __version__ = '0.0.5'
 
 from modules.random_quote import get_random_quote
 
-'''
- Version 0.0.5 Changelog
- ------------------------------- 
- Code Modularization 
- environment variables for API keys ( News / Weather) 
----------------------------------
-'''
+"""
+This module contains the main logic for the Pyppin chatbot.
+
+The chatbot responds to a variety of user inputs with information fetched from different APIs. The responses include current weather, random quotes, random cat facts, news articles, Wikipedia summaries, and Google search results.
+
+API keys are managed through environment variables for security.
+
+Functions:
+respond: Generates a response to a given user input.
+"""
 
 # ChatBot Name
 CHAT_BOT = "Pyppin"
@@ -52,6 +55,7 @@ don't forget to set the environment variables
 setx WEATHER_API_KEY = ""
 setx NEWS_API_KEY = ""
 '''
+
 
 # Get API keys from environment variables
 WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
@@ -94,7 +98,19 @@ def handle_clear_screen():
     return f'clearing screen'
 
 
+
 def respond(user_input):
+    """
+        Generates a response to a given user input.
+
+        The function tokenizes the user input, checks it against a list of keywords, and calls the appropriate function to generate a response. If no matching keywords are found, it returns a generic response.
+
+        Args:
+        user_input (str): The user's input.
+
+        Returns:
+        str: The chatbot's response.
+        """
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
     # Define a list of keywords and their corresponding responses

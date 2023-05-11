@@ -2,9 +2,28 @@ import requests
 from tqdm import tqdm
 import os
 
+"""
+This module contains a function to fetch the latest news articles.
+
+The function uses the News API.
+
+Functions:
+fetch_news: Fetches the latest news articles.
+"""
+
 NEWS_API_KEY = os.getenv('NEWS_API_KEY')
 
 def fetch_news(query):
+    """
+      Fetches the latest news articles.
+
+      Args:
+      api_key (str): News API key.
+
+      Returns:
+      str: A string containing the latest news articles, or an error message.
+      """
+
     url = f'https://newsapi.org/v2/everything?q={query}&apiKey={NEWS_API_KEY}'
     response = requests.get(url)
 
