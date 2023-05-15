@@ -20,10 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+__version__ = '0.0.7'
+
+import aiohttp
+import asyncio
 import os
-import requests
-from requests.exceptions import Timeout, TooManyRedirects, RequestException
-from tqdm import tqdm
+
 
 """
 This module contains a function to fetch the latest news articles.
@@ -36,35 +38,39 @@ fetch_news: Fetches the latest news articles.
 
 NEWS_API_KEY = os.getenv('NEWS_API_KEY')
 
-def fetch_news(query):
+async def fetch_news(query):
     """
     Fetches the latest news articles.
 
     Args:
-    query (str): Topic for news search.
+    query (str): News search query.
 
     Returns:
     str: A string containing the latest news articles, or an error message.
     """
-    try:
-        url = f'https://newsapi.org/v2/everything?q={query}&apiKey={NEWS_API_KEY}'
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-    except Timeout:
-        return "Sorry, the request for news timed out. Please try again."
-    except TooManyRedirects:
-        return "Sorry, the request for news encountered too many redirects."
-    except RequestException as e:
-        return f"Sorry, there was a problem with the request for news: {e}"
+    url = f'https://newsapi.org/v2/everything?q={query}&apiKey={NEWS_API_KEY}'
 
-    data = response.json()
-    articles = data['articles']
-    if articles:
-        results = []
-        for article in tqdm(articles[:5], desc="Fetching news", ncols=80):  # Limit to the first 5 articles
-            title = article['title']
-            url = article['url']
-            results.append(f"{title}\n{url}\n")
-        return "\n".join(results)
-    else:
-        return f"No news articles found for '{query}'."
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    articles = data['articles']
+                    if articles:
+                        results = []
+                        for article in articles[:5]:  # Limit to the first 5 articles
+                            title = article['title']
+                            url = article['url']
+                            results.append(f"{title}\n{url}\n")
+                        return "\n".join(results)
+                    else:
+                        return f"No news articles found for '{query}'."
+                else:
+                    return f"Failed to fetch news articles. Error code: {resp.status}"
+    except aiohttp.ClientError as e:
+        return f"Sorry, there was a problem with the request for news: {e}"
+    except Exception as e:
+        return f"Sorry, an unexpected error occurred: {e}"
+
+# Then, to call this function, you would use asyncio.run in your main program like so:
+# asyncio.run(fetch_news('Python'))  -<<--- only use is using python 3.7

@@ -26,13 +26,16 @@ import random
 import os
 import datetime
 import requests
+import aiohttp
+import asyncio
+import time
 
 # Importing  modules
 import modules
 from modules import weather, fetch_news, wikipedia_search
 
 # Current Chatbot Version
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 from modules.random_cat_fact import get_random_cat_fact
 
@@ -112,6 +115,31 @@ def handle_wikipedia_search(query):
     return wikipedia_search.wikipedia_search(query)
 
 
+# make_api_request function with rate limit handling
+def make_api_request(url, params=None):
+    max_retries = 5
+    backoff_time = 1
+
+    for attempt in range(max_retries):
+        response = requests.get(url, params=params)
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 429:
+            print(f"Rate limit exceeded. Retrying in {backoff_time} seconds...")
+            time.sleep(backoff_time)
+            backoff_time *= 2
+            continue
+
+        # Handle other error codes...
+
+        response.raise_for_status()
+
+    # Handle max retries exceeded
+    print("Max retries exceeded. Unable to make API request.")
+    return None
+
 # Respond to users input
 def respond(user_input):
     """
@@ -164,7 +192,7 @@ def respond(user_input):
         if keyword in user_input.lower():
             if keyword == "weather in":
                 city = user_input.lower().split("weather in")[1].strip()
-                print(f"Debug: city = '{city}'")  # Debug print
+                #print(f"Debug: city = '{city}'")  # Debug print
                 return get_weather(city)
 
     # Check for individual keywords
@@ -196,8 +224,14 @@ def respond(user_input):
                     return get_random_cat_fact()
                 # If a keyword is found, return a random response from its corresponding list
                 if phrase == "news":
+                    # changed to use Aio in 0.7
                     query = user_input.split('news', 1)[1].strip()
-                    return modules.fetch_news.fetch_news(query)
+
+                    async def run_fetch_news():
+                        return await modules.fetch_news.fetch_news(query)
+                    loop = asyncio.get_event_loop()
+                    news_result = loop.run_until_complete(run_fetch_news())
+                    return news_result
                 if phrase == "joke":
                     try:
                         url = "https://official-joke-api.appspot.com/random_joke"
