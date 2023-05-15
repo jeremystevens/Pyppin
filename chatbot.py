@@ -20,40 +20,57 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import nltk
+# Import required modules
 from nltk.tokenize import word_tokenize
 import random
-import requests
-import math
 import os
-import json
 import datetime
-import wikipedia
-from googlesearch import search
-from tqdm import tqdm
+import requests
+import aiohttp
+import asyncio
 import time
 
-# Current Chatbot Version
-__version__ = '0.0.4-R1'
+# Importing  modules
+import modules
+from modules import weather, fetch_news, wikipedia_search
 
-'''
- Version 0.0.4-Rev 1 Changelog
- ------------------------------- 
- Added fetch quotes from Quotes Garden
- Added Fetch random Cat Facts 
- Added Commands List for all available API's and other userful commands 
- Fixed the exit command to exit the program. 
----------------------------------
-'''
+# Current Chatbot Version
+__version__ = '0.0.7'
+
+from modules.random_cat_fact import get_random_cat_fact
+
+from modules.random_quote import get_random_quote
+from modules.weather import handle_weather as get_weather
+from modules.google_search import handle_google_search
+
+"""
+This module contains the main logic for the Pyppin chatbot.
+
+The chatbot responds to a variety of user inputs with information fetched from different APIs. The responses include current weather, random quotes, random cat facts, news articles, Wikipedia summaries, and Google search results.
+
+API keys are managed through environment variables for security.
+
+Functions:
+respond: Generates a response to a given user input.
+"""
 
 # ChatBot Name
 CHAT_BOT = "Pyppin"
+user_name = ""  # username
 
-# Replace Your OpenWeathermap.org API Key
-api_key = 'API_key_here'
-# Replace this with your actual NewsAPI key
-NEWS_API_KEY = 'API_key_here'
+'''
+don't forget to set the environment variables 
+setx WEATHER_API_KEY = ""
+setx NEWS_API_KEY = ""
+'''
 
+# Get API keys from environment variables
+WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
+NEWS_API_KEY = os.getenv('NEWS_API_KEY')
+
+# Pass API keys to functions that need them
+weather.WEATHER_API_KEY = WEATHER_API_KEY
+fetch_news.NEWS_API_KEY = NEWS_API_KEY
 
 # Define a list of command keywords to help the user.
 command_descriptions = [
@@ -71,101 +88,71 @@ command_descriptions = [
     "exit(): Exits the chatbot."
 ]
 
-# Fetch a Random Quote from Quote Garden.
-def get_random_quote():
-    try:
-        url = "https://quote-garden.onrender.com/api/v3/quotes/random"
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            quote_text = data['data'][0]['quoteText']
-            quote_author = data['data'][0]['quoteAuthor']
-            return f'"{quote_text}" - {quote_author}'
-        else:
-            return "Sorry, I couldn't fetch a quote right now."
-    except requests.exceptions.RequestException as e:
-        # Log the error for debugging purposes
-        print(f"Error occurred: {e}")
-        return "Sorry, I couldn't fetch a quote right now."
 
-# Grab a Random Cat Fact
-def get_random_cat_fact():
-    try:
-        response = requests.get('https://catfact.ninja/fact')
-        if response.status_code == 200:
-            data = response.json()
-            return data['fact']
-        else:
-            return f"Failed to retrieve cat fact. Error code: {response.status_code}"
-    except requests.exceptions.RequestException:
-        return "Sorry, I couldn't retrieve a cat fact right now. Please try again later."
+def get_greeting():
+    current_hour = datetime.datetime.now().hour
 
-
-# fetch News articles
-def fetch_news(query):
-    url = f'https://newsapi.org/v2/everything?q={query}&apiKey={NEWS_API_KEY}'
-    response = requests.get(url)
-
-    if response.status_code == 200:
-        data = response.json()
-        articles = data['articles']
-        if articles:
-            results = []
-            for article in tqdm(articles[:5], desc="Fetching news", ncols=80):  # Limit to the first 5 articles
-                title = article['title']
-                url = article['url']
-                results.append(f"{title}\n{url}\n")
-            return "\n".join(results)
-        else:
-            return f"No news articles found for '{query}'."
+    if current_hour < 12:
+        return "Good morning"
+    elif 12 <= current_hour < 18:
+        return "Good afternoon"
     else:
-        return f"Failed to fetch news articles. Error code: {response.status_code}"
+        return "Good evening"
 
 
-# Fetch the weather
-def handle_weather():
-    city = input("Enter the City Name: ")
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}'
-    response = requests.get(url)
-
-    if response.status_code == 200:
-        data = response.json()
-        temperature_k = data['main']['temp']
-        temperature_f = math.ceil((9 / 5) * (temperature_k - 273) + 32)
-        humidity = data['main']['humidity']
-        description = data['weather'][0]['description']
-        return f'The weather in {city} is {description} with a temperature of {temperature_f} °F and a humidity of {humidity}%.'
-
-    return f'Request failed with error code {response.status_code}.'
+# get the weather
+def handle_weather(city):
+    #print(f"Debug: In handle_weather, city = '{city}'")  # Debug print
+    weather_info = weather.get_weather(city)
+    print(f"Debug: In handle_weather, weather_info = '{weather_info}'")  # Debug print
+    if weather_info:
+        return weather_info
+    else:
+        return "I'm sorry, I couldn't fetch the weather information."
 
 
-def handle_clear_screen():
-    os.system('cls')
-    return f'clearing screen'
+def handle_wikipedia_search(query):
+    return wikipedia_search.wikipedia_search(query)
 
 
-def handle_wikipedia_search():
-    search_query = input("What would you like to search for: ")
-    # Show progress bar
-    for _ in tqdm(range(100), desc="Searching Wikipedia"):
-        time.sleep(0.01)
-    results = wikipedia.summary(search_query)
-    return results
+# make_api_request function with rate limit handling
+def make_api_request(url, params=None):
+    max_retries = 5
+    backoff_time = 1
 
+    for attempt in range(max_retries):
+        response = requests.get(url, params=params)
 
-def handle_google_search():
-    query = input("what would you like to search for: ")
-    search_results = []
-    # Show progress bar
-    for _ in tqdm(range(100), desc="Searching Google"):
-        time.sleep(0.01)
-    for j in search(query, tld="co.in", num=10, stop=10, pause=2):
-        search_results.append(j)
+        if response.status_code == 200:
+            return response.json()
 
-    return "\n".join(search_results)
+        if response.status_code == 429:
+            print(f"Rate limit exceeded. Retrying in {backoff_time} seconds...")
+            time.sleep(backoff_time)
+            backoff_time *= 2
+            continue
 
+        # Handle other error codes...
 
+        response.raise_for_status()
+
+    # Handle max retries exceeded
+    print("Max retries exceeded. Unable to make API request.")
+    return None
+
+# Respond to users input
 def respond(user_input):
+    """
+        Generates a response to a given user input.
+
+        The function tokenizes the user input, checks it against a list of keywords, and calls the appropriate function to generate a response. If no matching keywords are found, it returns a generic response.
+
+        Args:
+        user_input (str): The user's input.
+
+        Returns:
+        str: The chatbot's response.
+        """
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
     # Define a list of keywords and their corresponding responses
@@ -190,34 +177,42 @@ def respond(user_input):
         (["news"], []),
         (["quote"], [get_random_quote()]),
         (["cat fact"], []),
-        (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),  # Add this line for time
-        (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),  # Add this line for date
-        (["how", "are", "you"],
-         ["I'm doinhg well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
+        (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),
+        (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),
     ]
 
     # Define a list of individual keywords to check for
     individual_keywords = [
-        "weather",
-        "clear screen",
+        "weather in",
         "wikipedia",
         "google"
     ]
+    # Check for individual keywords
+    for keyword in individual_keywords:
+        if keyword in user_input.lower():
+            if keyword == "weather in":
+                city = user_input.lower().split("weather in")[1].strip()
+                #print(f"Debug: city = '{city}'")  # Debug print
+                return get_weather(city)
 
     # Check for individual keywords
     for token in tokens:
         if token in individual_keywords:
-            if token == "weather":
-                return handle_weather()
-            elif token == "clear screen":
-                return handle_clear_screen()
+            if token == "weather in":
+                city = user_input.lower().split("weather in")[1].strip()
+                return modules.weather(city)
+
             elif token == "wikipedia":
-                return handle_wikipedia_search()
+                query = user_input.split('wikipedia', 1)[1].strip()  # Extract the part of the user_input after 'wikipedia'
+                response = modules.wikipedia_search.handle_wikipedia_search(query)
+                return response
+
             elif token == "google":
-                return handle_google_search()
+                query = user_input.split('google', 1)[1].strip()  # Extract the part of the message after 'google'
+                response = handle_google_search(query)
+                return response
 
-
-    # The rest of your respond() function
+    # Other Phrases
     for phrase in [" ".join(tokens[i:i + 2]) for i in range(len(tokens) - 1)] + tokens:
         for keyword, responses in keywords:
             if phrase in keyword:
@@ -229,8 +224,14 @@ def respond(user_input):
                     return get_random_cat_fact()
                 # If a keyword is found, return a random response from its corresponding list
                 if phrase == "news":
-                    search = input("What topic would you like news about? ")
-                    return fetch_news(search)
+                    # changed to use Aio in 0.7
+                    query = user_input.split('news', 1)[1].strip()
+
+                    async def run_fetch_news():
+                        return await modules.fetch_news.fetch_news(query)
+                    loop = asyncio.get_event_loop()
+                    news_result = loop.run_until_complete(run_fetch_news())
+                    return news_result
                 if phrase == "joke":
                     try:
                         url = "https://official-joke-api.appspot.com/random_joke"
@@ -248,19 +249,12 @@ def respond(user_input):
                 else:
                     return random.choice(responses)
 
-                # Get Date
-                if phrase == "date":
-                    now = datetime.now()
-                    return now.strftime("%B %d, %Y")
-
-                # Get the Time
-                if phrase == "time":
-                    now = datetime.now()
-                    return now.strftime("%I:%M %p")
-
     # If no keyword is found, return a generic response
     return "I'm sorry, I didn't understand what you said."
 
+
+# Greet User
+print(f"chatbot: {get_greeting()}, How can I assist you today?")
 
 # Prompt the user for input and get a response from the chatbot
 city = None
