@@ -175,8 +175,7 @@ def respond(user_input):
                 return modules.weather(city)
 
             elif token == "wikipedia":
-                query = user_input.split('wikipedia', 1)[
-                    1].strip()  # Extract the part of the user_input after 'wikipedia'
+                query = user_input.split('wikipedia', 1)[1].strip()  # Extract the part of the user_input after 'wikipedia'
                 response = modules.wikipedia_search.handle_wikipedia_search(query)
                 return response
 
