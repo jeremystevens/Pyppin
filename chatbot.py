@@ -28,12 +28,17 @@ import datetime
 import requests
 
 # Importing  modules
+import modules
 from modules import weather, random_quote, random_cat_fact, fetch_news, wikipedia_search, google_search
 
 # Current Chatbot Version
-__version__ = '0.0.5'
+__version__ = '0.0.6'
+
+from modules.random_cat_fact import get_random_cat_fact
 
 from modules.random_quote import get_random_quote
+from modules.weather import handle_weather as get_weather
+from modules.google_search import handle_google_search
 
 """
 This module contains the main logic for the Pyppin chatbot.
@@ -55,7 +60,6 @@ don't forget to set the environment variables
 setx WEATHER_API_KEY = ""
 setx NEWS_API_KEY = ""
 '''
-
 
 # Get API keys from environment variables
 WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
@@ -93,12 +97,22 @@ def get_greeting():
         return "Good evening"
 
 
-def handle_clear_screen():
-    os.system('cls')
-    return f'clearing screen'
+# get the weather
+def handle_weather(city):
+    print(f"Debug: In handle_weather, city = '{city}'")  # Debug print
+    weather_info = weather.get_weather(city)
+    print(f"Debug: In handle_weather, weather_info = '{weather_info}'")  # Debug print
+    if weather_info:
+        return weather_info
+    else:
+        return "I'm sorry, I couldn't fetch the weather information."
 
 
+def handle_wikipedia_search(query):
+    return wikipedia_search.wikipedia_search(query)
 
+
+# Respond to users input
 def respond(user_input):
     """
         Generates a response to a given user input.
@@ -137,31 +151,42 @@ def respond(user_input):
         (["cat fact"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),
-        (["how", "are", "you"],
-         ["I'm doinhg well, thank you for asking!", "I'm just a computer program, but thanks for asking!"])
     ]
 
     # Define a list of individual keywords to check for
     individual_keywords = [
-        "weather",
-        "clear screen",
+        "weather in",
         "wikipedia",
         "google"
     ]
+    # Check for individual keywords
+    for keyword in individual_keywords:
+        if keyword in user_input.lower():
+            if keyword == "weather in":
+                city = user_input.lower().split("weather in")[1].strip()
+                print(f"Debug: city = '{city}'")  # Debug print
+                return get_weather(city)
 
     # Check for individual keywords
     for token in tokens:
         if token in individual_keywords:
-            if token == "weather":
-                return weather.handle_weather()
-            elif token == "clear screen":
-                return handle_clear_screen()
-            elif token == "wikipedia":
-                return wikipedia_search.handle_wikipedia_search()
-            elif token == "google":
-                return google_search.handle_google_search()
+            if token == "weather in":
+                city = user_input.lower().split("weather in")[1].strip()
+                return modules.weather(city)
 
-    # The rest of your respond() function
+            elif token == "wikipedia":
+                query = user_input.split('wikipedia', 1)[
+                    1].strip()  # Extract the part of the user_input after 'wikipedia'
+                response = modules.wikipedia_search.handle_wikipedia_search(query)
+                return response
+
+            elif token == "google":
+                print("Google Was Requested")
+                query = user_input.split('google', 1)[1].strip()  # Extract the part of the message after 'google'
+                response = handle_google_search(query)
+                return response
+
+    # Other Phrases
     for phrase in [" ".join(tokens[i:i + 2]) for i in range(len(tokens) - 1)] + tokens:
         for keyword, responses in keywords:
             if phrase in keyword:
@@ -173,8 +198,8 @@ def respond(user_input):
                     return get_random_cat_fact()
                 # If a keyword is found, return a random response from its corresponding list
                 if phrase == "news":
-                    search = input("What topic would you like news about? ")
-                    return fetch_news(search)
+                    query = user_input.split('news', 1)[1].strip()
+                    return modules.fetch_news.fetch_news(query)
                 if phrase == "joke":
                     try:
                         url = "https://official-joke-api.appspot.com/random_joke"
