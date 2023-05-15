@@ -31,27 +31,24 @@ Functions:
 get_random_quote: Fetches a random quote.
 """
 
+import requests
+import os
+from requests.exceptions import Timeout, TooManyRedirects, RequestException
+
+
 def get_random_quote():
     """
-       Fetches a random quote.
-
-       Args:
-       api_key (str): Quotable API key.
-
-       Returns:
-       str: A string containing the random quote, or an error message.
-       """
+    Fetches a random quote from the API and returns it.
+    """
     try:
-        url = "https://quote-garden.onrender.com/api/v3/quotes/random"
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            quote_text = data['data'][0]['quoteText']
-            quote_author = data['data'][0]['quoteAuthor']
-            return f'"{quote_text}" - {quote_author}'
-        else:
-            return "Sorry, I couldn't fetch a quote right now."
-    except requests.exceptions.RequestException as e:
-        # Log the error for debugging purposes
-        print(f"Error occurred: {e}")
-        return "Sorry, I couldn't fetch a quote right now."
+        response = requests.get('https://api.quotable.io/random', timeout=5)
+        response.raise_for_status()
+    except Timeout:
+        return "Sorry, the request for a quote timed out. Please try again."
+    except TooManyRedirects:
+        return "Sorry, the request for a quote encountered too many redirects."
+    except RequestException as e:
+        return f"Sorry, there was a problem with the request for a quote: {e}"
+
+    json_response = response.json()
+    return f'"{json_response["content"]}" - {json_response["author"]}'

@@ -44,7 +44,7 @@ def handle_google_search(query):
         Returns:
         str: A string containing the Google search results, or an error message.
         """
-    print(f"Debug: Google Search = '{query}'")
+    #print(f"Debug: Google Search = '{query}'")
     search_results = []
     # Show progress bar
     for _ in tqdm(range(100), desc="Searching Google"):

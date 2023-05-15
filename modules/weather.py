@@ -1,18 +1,3 @@
-import requests
-import math
-import os
-"""
-This module contains a function to fetch the current weather for a specified city.
-
-The function uses the OpenWeatherMap API.
-
-Functions:
-fetch_weather: Fetches the current weather for a specified city.
-"""
-
-
-# Replace Your OpenWeathermap.org API Key
-WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
 # MIT License
 
 # Copyright (c) 2023 - Jeremy Stevens
@@ -35,27 +20,41 @@ WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+__version__ = '0.0.7'
+
+
+import requests
+import os
+from requests.exceptions import Timeout, TooManyRedirects, RequestException
+
+WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
+
+"""
+This module contains a function to fetch the current weather for a specified city.
+
+The function uses the OpenWeatherMap API.
+
+Functions:
+fetch_weather: Fetches the current weather for a specified city.
+"""
+
 def handle_weather(city):
-    """
-        Fetches the current weather for a specified city.
+    """Get the weather for a given city."""
+    try:
+        response = requests.get(f"http://api.weatherstack.com/current?access_key={WEATHER_API_KEY}&query={city}", timeout=5)
+        response.raise_for_status()
+    except Timeout:
+        return "Sorry, the request to get the weather information timed out. Please try again later."
+    except TooManyRedirects:
+        return "Sorry, your request for weather information was redirected too many times. Please try again later."
+    except RequestException as e:
+        return f"Sorry, there was an error with your request. Here's the error message: {str(e)}"
+    except Exception as e:
+        return f"Sorry, an unexpected error occurred: {str(e)}"
 
-        Args:
-        city (str): Name of the city for which to get the weather.
-        api_key (str): OpenWeatherMap API key.
+    data = response.json()
 
-        Returns:
-        str: A string describing the weather in the city, or an error message.
-        """
-    #print(f"Debug: In get_weather, city = '{city}'")
-    url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}'
-    response = requests.get(url)
+    if 'error' in data:
+        return data['error']['info']
 
-    if response.status_code == 200:
-        data = response.json()
-        temperature_k = data['main']['temp']
-        temperature_f = math.ceil((9 / 5) * (temperature_k - 273) + 32)
-        humidity = data['main']['humidity']
-        description = data['weather'][0]['description']
-        return f'The weather in {city} is {description} with a temperature of {temperature_f} °F and a humidity of {humidity}%.'
-
-    return f'Request failed with error code {response.status_code}.'
+    return f"Weather in {data['location']['name']}: {data['current']['temperature']}°C, {data['current']['weather_descriptions'][0]}"

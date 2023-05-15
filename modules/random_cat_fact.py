@@ -20,8 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import requests
-
 """
 This module contains a function to fetch a random cat fact.
 
@@ -31,22 +29,24 @@ Functions:
 get_random_cat_fact: Fetches a random cat fact.
 """
 
+import requests
+import os
+from requests.exceptions import Timeout, TooManyRedirects, RequestException
+
+
 def get_random_cat_fact():
     """
-       Fetches a random cat fact.
-
-       Args:
-       api_key (str): Cat Facts API key.
-
-       Returns:
-       str: A string containing the random cat fact, or an error message.
-       """
+    Fetches a random cat fact from the API and returns it.
+    """
     try:
-        response = requests.get('https://catfact.ninja/fact')
-        if response.status_code == 200:
-            data = response.json()
-            return data['fact']
-        else:
-            return f"Failed to retrieve cat fact. Error code: {response.status_code}"
-    except requests.exceptions.RequestException:
-        return "Sorry, I couldn't retrieve a cat fact right now. Please try again later."
+        response = requests.get('https://catfact.ninja/fact', timeout=5)
+        response.raise_for_status()
+    except Timeout:
+        return "Sorry, the request for a cat fact timed out. Please try again."
+    except TooManyRedirects:
+        return "Sorry, the request for a cat fact encountered too many redirects."
+    except RequestException as e:
+        return f"Sorry, there was a problem with the request for a cat fact: {e}"
+
+    json_response = response.json()
+    return json_response['fact']

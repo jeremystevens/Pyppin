@@ -29,7 +29,7 @@ import requests
 
 # Importing  modules
 import modules
-from modules import weather, random_quote, random_cat_fact, fetch_news, wikipedia_search, google_search
+from modules import weather, fetch_news, wikipedia_search
 
 # Current Chatbot Version
 __version__ = '0.0.6'
@@ -99,7 +99,7 @@ def get_greeting():
 
 # get the weather
 def handle_weather(city):
-    print(f"Debug: In handle_weather, city = '{city}'")  # Debug print
+    #print(f"Debug: In handle_weather, city = '{city}'")  # Debug print
     weather_info = weather.get_weather(city)
     print(f"Debug: In handle_weather, weather_info = '{weather_info}'")  # Debug print
     if weather_info:
@@ -180,7 +180,6 @@ def respond(user_input):
                 return response
 
             elif token == "google":
-                print("Google Was Requested")
                 query = user_input.split('google', 1)[1].strip()  # Extract the part of the message after 'google'
                 response = handle_google_search(query)
                 return response
