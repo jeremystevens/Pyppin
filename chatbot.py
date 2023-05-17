@@ -1,78 +1,31 @@
-# MIT License
-
-# Copyright (c) 2023 - Jeremy Stevens
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-# Import required modules
-from nltk.tokenize import word_tokenize
-import random
+import logging
 import os
 import datetime
 import requests
 import aiohttp
 import asyncio
-import time
-
-# Importing  modules
+import random
+from nltk.tokenize import word_tokenize
+import nltk
 import modules
 from modules import weather, fetch_news, wikipedia_search
-
-# Current Chatbot Version
-__version__ = '0.0.7'
-
 from modules.random_cat_fact import get_random_cat_fact
-
 from modules.random_quote import get_random_quote
-from modules.weather import handle_weather as get_weather
+from modules.weather import handle_weather as get_weather, handle_weather
 from modules.google_search import handle_google_search
 
-"""
-This module contains the main logic for the Pyppin chatbot.
+# Set up logging
+from modules.wikipedia_search import handle_wikipedia_search
 
-The chatbot responds to a variety of user inputs with information fetched from different APIs. The responses include current weather, random quotes, random cat facts, news articles, Wikipedia summaries, and Google search results.
+logging.basicConfig(filename='chatbot.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-API keys are managed through environment variables for security.
-
-Functions:
-respond: Generates a response to a given user input.
-"""
-
-# ChatBot Name
+# Constants
+__version__ = '0.0.8'
 CHAT_BOT = "Pyppin"
-user_name = ""  # username
-
-'''
-don't forget to set the environment variables 
-setx WEATHER_API_KEY = ""
-setx NEWS_API_KEY = ""
-'''
-
-# Get API keys from environment variables
 WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
 NEWS_API_KEY = os.getenv('NEWS_API_KEY')
-
-# Pass API keys to functions that need them
 weather.WEATHER_API_KEY = WEATHER_API_KEY
 fetch_news.NEWS_API_KEY = NEWS_API_KEY
-
-# Define a list of command keywords to help the user.
 command_descriptions = [
     "Commands List \n",
     "weather: Fetches the current weather for a specified city.",
@@ -89,7 +42,16 @@ command_descriptions = [
 ]
 
 
+# Function Definitions
 def get_greeting():
+    """
+        Returns a greeting based on the current time.
+
+        Returns:
+            str: The greeting message.
+    """
+
+    logging.info('Chatbot initiated')
     current_hour = datetime.datetime.now().hour
 
     if current_hour < 12:
@@ -100,61 +62,46 @@ def get_greeting():
         return "Good evening"
 
 
-# get the weather
-def handle_weather(city):
-    #print(f"Debug: In handle_weather, city = '{city}'")  # Debug print
-    weather_info = weather.get_weather(city)
-    print(f"Debug: In handle_weather, weather_info = '{weather_info}'")  # Debug print
-    if weather_info:
-        return weather_info
-    else:
-        return "I'm sorry, I couldn't fetch the weather information."
+def handle_date_search(query):
+    """
+       Handles a date search query.
 
+       Args:
+           query (str): The date query.
 
-def handle_wikipedia_search(query):
-    return wikipedia_search.wikipedia_search(query)
+       Returns:
+           str: The search result.
+    """
+    print("Date Search Started")
+    pass
 
+def handle_general_query(query):
+    """
+       Handles a general query.
 
-# make_api_request function with rate limit handling
-def make_api_request(url, params=None):
-    max_retries = 5
-    backoff_time = 1
+       Args:
+           query (str): The general query.
 
-    for attempt in range(max_retries):
-        response = requests.get(url, params=params)
+       Returns:
+           str: The query response.
+    """
+    print("General Query")
+    pass
 
-        if response.status_code == 200:
-            return response.json()
-
-        if response.status_code == 429:
-            print(f"Rate limit exceeded. Retrying in {backoff_time} seconds...")
-            time.sleep(backoff_time)
-            backoff_time *= 2
-            continue
-
-        # Handle other error codes...
-
-        response.raise_for_status()
-
-    # Handle max retries exceeded
-    print("Max retries exceeded. Unable to make API request.")
-    return None
-
-# Respond to users input
 def respond(user_input):
     """
         Generates a response to a given user input.
 
-        The function tokenizes the user input, checks it against a list of keywords, and calls the appropriate function to generate a response. If no matching keywords are found, it returns a generic response.
-
         Args:
-        user_input (str): The user's input.
+            user_input (str): The user's input.
 
         Returns:
-        str: The chatbot's response.
-        """
+            str: The chatbot's response.
+    """
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
+    tagged_tokens = nltk.pos_tag(tokens)
+    named_entities = nltk.ne_chunk(tagged_tokens)
     # Define a list of keywords and their corresponding responses
     keywords = [
         (["hello"], ["Hi There", "Hello"]),
@@ -176,9 +123,15 @@ def respond(user_input):
         (["joke"], []),
         (["news"], []),
         (["quote"], [get_random_quote()]),
+        (["weather in"], []),
         (["cat fact"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),
+        (["are", "you"], ["doing great! thanks", "doing ok thanks for asking"]),
+        (["feel"], ["As an artificial intelligence language model I have no Feeling", "I feel fantastic",
+                    "I need more sleep to be honest"]),
+        (["", "", "feeling"], ["As an artificial intelligence language model I have no Feeling", "I feel fantastic",
+                               "I need more sleep to be honest"]),
     ]
 
     # Define a list of individual keywords to check for
@@ -187,13 +140,42 @@ def respond(user_input):
         "wikipedia",
         "google"
     ]
-    # Check for individual keywords
-    for keyword in individual_keywords:
-        if keyword in user_input.lower():
-            if keyword == "weather in":
-                city = user_input.lower().split("weather in")[1].strip()
-                #print(f"Debug: city = '{city}'")  # Debug print
-                return get_weather(city)
+
+    def extract_named_entities(tree):
+        named_entities = []
+        for subtree in tree.subtrees(filter=lambda t: t.label() == 'NE'):
+            entity = ' '.join(word for word, tag in subtree.leaves())
+            entity_type = subtree.label()
+            named_entities.append((entity, entity_type))
+        return named_entities
+
+    def handle_named_entities(named_entities, user_input):
+        response = ""  # Initialize response with default value
+        for entity, entity_type in named_entities:
+            if entity_type == 'PERSON':
+                # Handle person name
+                # Example: "My name is John"
+                response = f"Nice to meet you, {entity}!"
+            elif entity_type == 'LOCATION':
+                # Handle location
+                # Example: "Tell me the weather in Paris"
+                city = entity
+                response = handle_weather(city)
+            elif entity_type == 'ORGANIZATION':
+                # Handle organization
+                # Example: "Search for information about OpenAI"
+                query = entity
+                response = handle_wikipedia_search(query)
+            elif entity_type == 'DATE':
+                # Handle date
+                # Example: "What happened on January 1st, 2022?"
+                response = handle_date_search(entity)
+
+        # If no named entity is found, fallback to regular response
+        if not response:
+            response = handle_general_query(user_input)
+
+        return response
 
     # Check for individual keywords
     for token in tokens:
@@ -203,7 +185,8 @@ def respond(user_input):
                 return modules.weather(city)
 
             elif token == "wikipedia":
-                query = user_input.split('wikipedia', 1)[1].strip()  # Extract the part of the user_input after 'wikipedia'
+                query = user_input.split('wikipedia', 1)[
+                    1].strip()  # Extract the part of the user_input after 'wikipedia'
                 response = modules.wikipedia_search.handle_wikipedia_search(query)
                 return response
 
@@ -217,6 +200,10 @@ def respond(user_input):
         for keyword, responses in keywords:
             if phrase in keyword:
                 # show commands and brief desc.
+                if phrase == "weather in":
+                    city = user_input.lower().split("weather in")[1].strip()
+                    response = weather.handle_weather(city)
+                    return response
                 if phrase == "commands":
                     return "\n".join(command_descriptions)
                 # if cat fact return cat fact obviously
@@ -229,6 +216,7 @@ def respond(user_input):
 
                     async def run_fetch_news():
                         return await modules.fetch_news.fetch_news(query)
+
                     loop = asyncio.get_event_loop()
                     news_result = loop.run_until_complete(run_fetch_news())
                     return news_result
@@ -253,20 +241,21 @@ def respond(user_input):
     return "I'm sorry, I didn't understand what you said."
 
 
-# Greet User
-print(f"chatbot: {get_greeting()}, How can I assist you today?")
-
-# Prompt the user for input and get a response from the chatbot
-city = None
-while True:
-    user_input = input("You: ")
-    if user_input.lower() == "exit()":
-        answer = input("Chatbot: are you sure you want to quit ? y / n? ")
-        if answer.lower() == "y":
+# Main Code Block
+def chatbot():
+    print(f"chatbot: {get_greeting()}, How can I assist you today?")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == "exit()":
             print("Chatbot: Goodbye! See you Next time")
+            logging.info('Chatbot: Goodbye! See you Next time')
             break
-        else:
-            print("Chatbot: I will not quit yet")
-            continue
-    response = respond(user_input)
-    print("Chatbot:", response)
+        if user_input.lower() == "error":
+            logging.error('User input caused an error')
+        response = respond(user_input)
+        logging.info(f'Chatbot: {response}')
+        print("Chatbot:", response)
+
+
+if __name__ == "__main__":
+    chatbot()
