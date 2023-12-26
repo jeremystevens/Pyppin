@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text To Speech</title>
+</head>
+<body>
+    <h1>Text To Speech Converter</h1>
+
+    <form action="/submit" method="post">
+        <p>Text:</p>
+        <p><input type="text" name="nm"/></p>
+        <p><input type="submit" value="Submit"/></p>
+    </form>
+
+    <button id="play">Play</button>
+    <script>
+        let play = document.getElementById("play");
+        function playMusic() {
+            let audio = new Audio("output.mp3");
+            audio.play();
+        }
+        play.addEventListener("click", playMusic);
+    </script>
+</body>
+</html>

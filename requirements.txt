@@ -1,0 +1,7 @@
+aiohttp
+googlesearch-python
+google-search
+python-googlesearch
+wikipedia
+nltk
+requests

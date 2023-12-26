@@ -1,25 +1,4 @@
-# MIT License
-
-# Copyright (c) 2023 - Jeremy Stevens
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
+from flask import Flask, render_template, request, jsonify
 # Import required modules
 from nltk.tokenize import word_tokenize
 import random
@@ -33,17 +12,16 @@ import time
 # Importing  modules
 import modules
 from modules import weather, fetch_news, wikipedia_search
-from modules.random_cat_fact import get_random_cat_fact
-from modules.random_quote import get_random_quote
-from modules.weather import handle_weather as get_weather
-from modules.google_search import handle_google_search
-
-# import keywords
-from keywords import keywords
 
 # Current Chatbot Version
 __version__ = '0.0.7'
 
+from modules.random_cat_fact import get_random_cat_fact
+from keywords import keywords
+from modules.random_quote import get_random_quote
+from modules.weather import handle_weather as get_weather
+from modules.google_search import handle_google_search
+from modules.stackoverflow import search_stackoverflow
 # ChatBot Name
 CHAT_BOT = "Pyppin"
 user_name = ""  # username
@@ -100,6 +78,10 @@ def handle_weather(city):
     else:
         return "I'm sorry, I couldn't fetch the weather information."
 
+# search stack overflow
+
+
+
 
 def handle_wikipedia_search(query):
     return wikipedia_search.wikipedia_search(query)
@@ -132,15 +114,51 @@ def make_api_request(url, params=None):
 
 # Respond to users input
 def respond(user_input):
+    """
+        Generates a response to a given user input.
+
+        The function tokenizes the user input, checks it against a list of keywords, and calls the appropriate function to generate a response. If no matching keywords are found, it returns a generic response.
+
+        Args:
+        user_input (str): The user's input.
+
+        Returns:
+        str: The chatbot's response.
+        """
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
-    # list of keywords
-    ''' moved keywords to keywords.py '''
+    # Define a list of keywords and their corresponding responses
+##    keywords = [
+##        (["hello"], ["Hi There", "Hello"]),
+##        (["hi"], ["Hello!", "Hi there!"]),
+##        (["thank you", "thanks"], ["you are welcome"]),
+##        (["name"], [f"My name is {CHAT_BOT}.", f"I'm {CHAT_BOT}."]),
+##        (["lol"], ["hahah!!", "hilarious"]),
+##        (["cool"], ["yeah it is cool!", "I know right!?"]),
+##        (["awesome", "awsome"], ["yes it is!", "I know right!?"]),
+##        (["meaning"], ["I'm sorry, I don't know the meaning of that word."]),
+##        (["bye", "goodbye", "good bye"], ["Goodbye!", "Bye!", "soo long", "see you later"]),
+##        (["asshole", "fucker", "cunt", "bitch", "slut", "ass", "arse", "bastard"],
+##         ["that's not nice", "that's rude", "please don't swear at me"]),
+##        (["fuck"], ["please use appropriate language"]),
+##        (["shit"], ["please use appropriate language"]),
+##        (["how old"], ["As an artificial intelligence language model, I don't have an age in the traditional sense."]),
+##        (["version"], [f"{CHAT_BOT} version --> {__version__}"]),
+##        (["commands"], [", ".join(command_descriptions)]),  # Add this line for commands
+##        (["joke"], []),
+##        (["news"], []),
+##        (["quote"], [get_random_quote()]),
+##        (["cat fact"], []),
+##        (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),
+##        (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),
+##    ]
+
     # Define a list of individual keywords to check for
     individual_keywords = [
         "weather in",
         "wikipedia",
-        "google"
+        "google",
+        "stackoverflow"
     ]
     # Check for individual keywords
     for keyword in individual_keywords:
@@ -165,6 +183,11 @@ def respond(user_input):
             elif token == "google":
                 query = user_input.split('google', 1)[1].strip()  # Extract the part of the message after 'google'
                 response = handle_google_search(query)
+                return response
+        
+            elif token =="stackoverflow":
+                query = user_input.split('stackoverflow', 1)[1].strip()  # Extract the part of the message after 'stackoverflow'
+                response = search_stackoverflow(query)
                 return response
 
     # Other Phrases
@@ -208,20 +231,21 @@ def respond(user_input):
     return "I'm sorry, I didn't understand what you said."
 
 
-# Greet User
-print(f"chatbot: {get_greeting()}, How can I assist you today?")
+ ### ============== FLASK =========================== #
 
-# Prompt the user for input and get a response from the chatbot
-city = None
-while True:
-    user_input = input("You: ")
-    if user_input.lower() == "exit()":
-        answer = input("Chatbot: are you sure you want to quit ? y / n? ")
-        if answer.lower() == "y":
-            print("Chatbot: Goodbye! See you Next time")
-            break
-        else:
-            print("Chatbot: I will not quit yet")
-            continue
+app = Flask(__name__)
+
+# Define the route for the home page
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Define the route for handling user requests
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.form['user_input']
     response = respond(user_input)
-    print("Chatbot:", response)
+    return jsonify({'response': response})
+
+if __name__ == '__main__':
+    app.run()
