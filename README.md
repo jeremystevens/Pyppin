@@ -13,6 +13,12 @@ Pyppin is a multifunctional chatbot built in Python, leveraging the power of Nat
 7. **News updates**: Fetch the latest news articles based on user input using the NewsAPI.
 8. **Progress bars**: Display progress bars for various tasks using the tqdm library.
 
+## Learn More
+
+For in-depth information, documentation, and usage examples, please visit our [Wiki](https://github.com/jeremystevens/Pyppin/wiki). The wiki contains detailed guides on installation, configuration, and usage of Pyppin. It also provides additional insights into the project's architecture and development process.
+
+We highly recommend checking out the wiki to get the most out of Pyppin.
+
 ## Contribute
 
 Pyppin is an open-source project, and contributions are highly appreciated. Whether it's bug fixes, feature enhancements, or documentation improvements, we welcome your help.
