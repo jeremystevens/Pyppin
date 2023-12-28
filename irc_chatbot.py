@@ -1,5 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# MIT License
+
+# Copyright (c) 2023 - Jeremy Stevens
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 
 """
 IRC Bot with Chatbot Integration
@@ -8,13 +30,6 @@ This script connects to an IRC server, joins a chat room, and uses the chatbot.p
 
 import irc.bot
 import subprocess
-
-# Define the bot's nickname, server, and chat room
-nickname = "Pyppin"
-server = "irc.server.com"
-channel = "#MyChatroom"
-
-# Import required modules
 from nltk.tokenize import word_tokenize
 import random
 import os
@@ -22,8 +37,6 @@ import datetime
 import requests
 import asyncio
 import time
-import sys
-import signal
 
 # Importing modules
 import modules
@@ -44,7 +57,7 @@ CHAT_BOT = "Pyppin"
 user_name = ""  # username
 
 '''
-don't forget to set the environment variables 
+Don't forget to set the environment variables
 setx WEATHER_API_KEY = ""
 setx NEWS_API_KEY = ""
 '''
@@ -73,6 +86,7 @@ command_descriptions = [
     "exit(): Exits the chatbot."
 ]
 
+
 def get_greeting():
     current_hour = datetime.datetime.now().hour
 
@@ -83,6 +97,7 @@ def get_greeting():
     else:
         return "Good evening"
 
+
 # get the weather
 def handle_weather(city):
     weather_info = weather.get_weather(city)
@@ -91,9 +106,11 @@ def handle_weather(city):
     else:
         return "I'm sorry, I couldn't fetch the weather information."
 
+
 # search stack overflow
 def handle_wikipedia_search(query):
     return wikipedia_search.wikipedia_search(query)
+
 
 # make_api_request function with rate limit handling
 def make_api_request(url, params=None):
@@ -120,6 +137,7 @@ def make_api_request(url, params=None):
     print("Max retries exceeded. Unable to make API request.")
     return None
 
+
 # Respond to users input
 def respond(user_input):
     """
@@ -132,7 +150,7 @@ def respond(user_input):
 
         Returns:
         str: The chatbot's response.
-        """
+    """
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
 
@@ -202,7 +220,12 @@ def respond(user_input):
                         return "Sorry, I couldn't retrieve a joke right now. Please try again later."
 
                 else:
-                    return random.choice(responses)
+                    response = random.choice(responses)
+
+                # Remove carriage return characters if present
+                response = response.replace('\r', '').replace('\n', '')
+
+                return response
 
     # If no keyword is found, return a generic response
     response = "I'm sorry, I didn't understand what you said."
@@ -211,6 +234,7 @@ def respond(user_input):
     response = response.replace('\r', '').replace('\n', '')
 
     return response
+
 
 # Create a custom IRC bot class
 class MyBot(irc.bot.SingleServerIRCBot):
@@ -226,16 +250,24 @@ class MyBot(irc.bot.SingleServerIRCBot):
         connection.join(channel)
 
     def on_pubmsg(self, connection, event):
-        # Extract the message content
-        message = event.arguments[0]
+ 	    # Extract the message content
+    	message = event.arguments[0]
+	    # Call the respond function to generate a response
+    	response = respond(message)
+    	# Split the response into separate lines
+    	response_lines = response.split('\n')
+    	# Send each line of the response as a separate PRIVMSG command
+    	for line in response_lines:
+        	# Send the response to the IRC channel
+        	connection.privmsg(channel, line)
 
-        # Call chatbot.py and capture its response
-        response = respond(message)
-
-        # Send the response to the IRC channel
-        connection.privmsg(channel, response)
 
 if __name__ == "__main__":
+    # Define the bot's nickname, server, and chat room
+    nickname = "MyBot"
+    server = "irc.server.com"
+    channel = "#mychannel"
+
     # Create an instance of the custom bot class and start it
     bot = MyBot()
     bot.start()
