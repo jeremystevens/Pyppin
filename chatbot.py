@@ -19,30 +19,28 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 # Import required modules
 from nltk.tokenize import word_tokenize
 import random
 import os
 import datetime
 import requests
-import aiohttp
 import asyncio
 import time
 
-# Importing  modules
+# Importing modules
 import modules
 from modules import weather, fetch_news, wikipedia_search
-from modules.random_cat_fact import get_random_cat_fact
-from modules.random_quote import get_random_quote
-from modules.weather import handle_weather as get_weather
-from modules.google_search import handle_google_search
-
-# import keywords
-from keywords import keywords
 
 # Current Chatbot Version
 __version__ = '0.0.7'
+
+from modules.random_cat_fact import get_random_cat_fact
+from keywords import keywords
+from modules.random_quote import get_random_quote
+from modules.weather import handle_weather as get_weather
+from modules.g_search import handle_google_search
+from modules.stackoverflow import search_stackoverflow
 
 # ChatBot Name
 CHAT_BOT = "Pyppin"
@@ -78,7 +76,6 @@ command_descriptions = [
     "exit(): Exits the chatbot."
 ]
 
-
 def get_greeting():
     current_hour = datetime.datetime.now().hour
 
@@ -89,21 +86,17 @@ def get_greeting():
     else:
         return "Good evening"
 
-
 # get the weather
 def handle_weather(city):
-    #print(f"Debug: In handle_weather, city = '{city}'")  # Debug print
     weather_info = weather.get_weather(city)
-    print(f"Debug: In handle_weather, weather_info = '{weather_info}'")  # Debug print
     if weather_info:
         return weather_info
     else:
         return "I'm sorry, I couldn't fetch the weather information."
 
-
+# search stack overflow
 def handle_wikipedia_search(query):
     return wikipedia_search.wikipedia_search(query)
-
 
 # make_api_request function with rate limit handling
 def make_api_request(url, params=None):
@@ -132,39 +125,48 @@ def make_api_request(url, params=None):
 
 # Respond to users input
 def respond(user_input):
+    """
+        Generates a response to a given user input.
+
+        The function tokenizes the user input, checks it against a list of keywords, and calls the appropriate function to generate a response. If no matching keywords are found, it returns a generic response.
+
+        Args:
+        user_input (str): The user's input.
+
+        Returns:
+        str: The chatbot's response.
+        """
     # Tokenize the user input
     tokens = word_tokenize(user_input.lower())
-    # list of keywords
-    ''' moved keywords to keywords.py '''
+
     # Define a list of individual keywords to check for
     individual_keywords = [
         "weather in",
         "wikipedia",
-        "google"
+        "google",
+        "stackoverflow"
     ]
-    # Check for individual keywords
-    for keyword in individual_keywords:
-        if keyword in user_input.lower():
-            if keyword == "weather in":
-                city = user_input.lower().split("weather in")[1].strip()
-                #print(f"Debug: city = '{city}'")  # Debug print
-                return get_weather(city)
 
     # Check for individual keywords
     for token in tokens:
         if token in individual_keywords:
             if token == "weather in":
                 city = user_input.lower().split("weather in")[1].strip()
-                return modules.weather(city)
+                return get_weather(city)
 
             elif token == "wikipedia":
-                query = user_input.split('wikipedia', 1)[1].strip()  # Extract the part of the user_input after 'wikipedia'
+                query = user_input.split('wikipedia', 1)[1].strip()
                 response = modules.wikipedia_search.handle_wikipedia_search(query)
                 return response
 
             elif token == "google":
-                query = user_input.split('google', 1)[1].strip()  # Extract the part of the message after 'google'
+                query = user_input.split('google', 1)[1].strip()
                 response = handle_google_search(query)
+                return response
+
+            elif token == "stackoverflow":
+                query = user_input.split('stackoverflow', 1)[1].strip()
+                response = search_stackoverflow(query)
                 return response
 
     # Other Phrases
@@ -179,7 +181,6 @@ def respond(user_input):
                     return get_random_cat_fact()
                 # If a keyword is found, return a random response from its corresponding list
                 if phrase == "news":
-                    # changed to use Aio in 0.7
                     query = user_input.split('news', 1)[1].strip()
 
                     async def run_fetch_news():
@@ -187,6 +188,7 @@ def respond(user_input):
                     loop = asyncio.get_event_loop()
                     news_result = loop.run_until_complete(run_fetch_news())
                     return news_result
+
                 if phrase == "joke":
                     try:
                         url = "https://official-joke-api.appspot.com/random_joke"
@@ -201,27 +203,19 @@ def respond(user_input):
                     # catch request exception ex. no internet connection
                     except requests.exceptions.RequestException:
                         return "Sorry, I couldn't retrieve a joke right now. Please try again later."
+
                 else:
                     return random.choice(responses)
 
     # If no keyword is found, return a generic response
     return "I'm sorry, I didn't understand what you said."
 
-
-# Greet User
-print(f"chatbot: {get_greeting()}, How can I assist you today?")
-
-# Prompt the user for input and get a response from the chatbot
-city = None
-while True:
-    user_input = input("You: ")
-    if user_input.lower() == "exit()":
-        answer = input("Chatbot: are you sure you want to quit ? y / n? ")
-        if answer.lower() == "y":
-            print("Chatbot: Goodbye! See you Next time")
+if __name__ == '__main__':
+    print(f"{get_greeting()}! I'm {CHAT_BOT}, your chatbot. How can I assist you today?")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == "exit()":
+            print("Goodbye!")
             break
-        else:
-            print("Chatbot: I will not quit yet")
-            continue
-    response = respond(user_input)
-    print("Chatbot:", response)
+        response = respond(user_input)
+        print(f"{CHAT_BOT}: {response}")

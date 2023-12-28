@@ -14,7 +14,8 @@ import os
 from requests.exceptions import Timeout, TooManyRedirects, RequestException
 
 
-async def get_random_quote():
+def get_random_quote():
+
     """
     Fetches a random quote from the API and returns it.
     """

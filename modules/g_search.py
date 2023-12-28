@@ -1,55 +1,24 @@
-# MIT License
-
-# Copyright (c) 2023 - Jeremy Stevens
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
-from googlesearch import search
-from tqdm import tqdm
-import time
-
-"""
-This module contains a function to perform a Google search.
-
-The function uses the Google Search API.
-
-Functions:
-google_search: Performs a Google search.
-"""
+from googlesearch import Search
 
 def handle_google_search(query):
-    """
-        Performs a Google search.
+    try:
+        # Perform the Google search
+        search_results = Search(query)
+        results = search_results.results
 
-        Args:
-        query (str): Search query.
-        api_key (str): Google Search API key.
+        # Check if there are any results
+        if results:
+            # Extract the title and link for the top result
+            top_result = results[0]
+            title = top_result.title
+            link = top_result.url
+            return f"Title: {title}\nLink: {link}"
+        else:
+            return "No results found."
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-        Returns:
-        str: A string containing the Google search results, or an error message.
-        """
-    #print(f"Debug: Google Search = '{query}'")
-    search_results = []
-    # Show progress bar
-    for _ in tqdm(range(100), desc="Searching Google"):
-        time.sleep(0.01)
-    for j in search(query, tld="co.in", num=10, stop=10, pause=2):
-        search_results.append(j)
-
-    return "\n".join(search_results)
+# Example usage:
+#query = input("Ask me something: ")
+#result = google_search_top_result(query)
+#print(result)

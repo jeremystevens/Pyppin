@@ -6,7 +6,7 @@ from modules import weather, fetch_news, wikipedia_search
 from modules.random_cat_fact import get_random_cat_fact
 from modules.random_quote import get_random_quote
 from modules.weather import handle_weather as get_weather
-from modules.google_search import handle_google_search
+from modules.g_search import handle_google_search
 from modules.stackoverflow import search_stackoverflow
 CHAT_BOT = "pypin"
 __version__ = "0.0.7"
@@ -48,4 +48,5 @@ keywords = [
         (["cat fact"], []),
         (["time"], [datetime.datetime.now().strftime("%I:%M %p")]),
         (["date"], [datetime.datetime.now().strftime("%B %d, %Y")]),
+        (["stackoverflow"], [search_stackoverflow]),
     ]
