@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # MIT License
 
 # Copyright (c) 2023 - Jeremy Stevens
@@ -8,8 +9,10 @@
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
+
 # The above copyright notice and this permission notice shall be included in all
 # copies or substantial portions of the Software.
+
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -17,6 +20,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+import spacy
+from transformers import pipeline
+# -*- coding: utf-8 -*-
 
 from nltk.tokenize import word_tokenize
 import random
@@ -35,6 +42,11 @@ from modules.random_quote import get_random_quote
 from modules.weather import handle_weather as get_weather
 from modules.g_search import handle_google_search
 from modules.stackoverflow import search_stackoverflow
+# Load SpaCy's English model
+nlp = spacy.load('en_core_web_sm')
+
+# Initialize a transformer pipeline for conversational tasks
+transformer_conversation = pipeline('conversational', model='microsoft/DialoGPT-medium')
 
 # Current Chatbot Version and Name
 __version__ = '0.0.8'
@@ -42,6 +54,30 @@ CHAT_BOT = "Pyppin"
 
 # ChatBot Class
 class ChatBot:
+
+    def process_input(self, user_input):
+        """ Analyze user input using SpaCy and determine the response """
+        # Analyze the input with SpaCy
+        doc = nlp(user_input)
+
+        # Example: Check for entities (can be extended based on requirements)
+        for entity in doc.ents:
+            if entity.label_ == 'WEATHER':
+                return self.get_weather_info(entity.text)
+            # Additional conditions can be added here
+
+        # If no specific action is determined, use the transformer for response
+        return self.generate_response(user_input)
+
+    def generate_response(self, user_input):
+        """ Generate a response using the transformer model """
+        conversation_input = {'conversation': user_input}
+        response = transformer_conversation(conversation_input)
+        return response[0]['generated_text']
+
+    # Example method for fetching weather (to be implemented based on existing logic)
+    def get_weather_info(self, location):
+        return f'Fetching weather information for {location}...'
     def __init__(self, name=CHAT_BOT):
         self.name = name
         self.weather_api_key = os.getenv('WEATHER_API_KEY')
