@@ -49,7 +49,7 @@ nlp = spacy.load('en_core_web_sm')
 transformer_conversation = pipeline('conversational', model='microsoft/DialoGPT-medium')
 
 # Current Chatbot Version and Name
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 CHAT_BOT = "Pyppin"
 
 # ChatBot Class

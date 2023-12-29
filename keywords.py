@@ -33,7 +33,7 @@ from modules.g_search import handle_google_search
 from modules.stackoverflow import search_stackoverflow
 
 CHAT_BOT = "pypin"
-__version__ = "0.0.7"
+__version__ = "0.0.9"
 
 # Define a list of command keywords to help the user.
 command_descriptions = [
