@@ -124,16 +124,16 @@ keywords = [
     # List of Available Commands
     (["commands"], [", ".join(command_descriptions)]),
 
-    # Jokes (Placeholder, you can expand this with actual jokes)
+    # Jokes
     (["joke"], []),
 
-    # News (Placeholder, you can integrate an API for news)
+    # News 
     (["news"], []),
 
     # Random Quote
     (["quote"], [get_random_quote()]),
 
-    # Random Cat Fact (Placeholder, you can integrate an API for cat facts)
+    # Random Cat Fact 
     (["cat fact"], []),
 
     # Current Time
@@ -142,7 +142,7 @@ keywords = [
     # Current Date
     (["date"], [get_current_date()]),
 
-    # Stack Overflow Search (Placeholder, you can implement Stack Overflow search)
+    # Stack Overflow Search 
     (["stackoverflow"], [search_stackoverflow]),
 ]
 

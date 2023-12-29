@@ -60,11 +60,11 @@ class ChatBot:
         # Analyze the input with SpaCy
         doc = nlp(user_input)
 
-        # Example: Check for entities (can be extended based on requirements)
+        # Check for entities 
         for entity in doc.ents:
             if entity.label_ == 'WEATHER':
                 return self.get_weather_info(entity.text)
-            # Additional conditions can be added here
+            # Additional conditions here
 
         # If no specific action is determined, use the transformer for response
         return self.generate_response(user_input)
