@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import nltk
+nltk.download('punkt') # Download the Punkt tokenizer for NLTK if not already downloaded
 from nltk.tokenize import word_tokenize
 import random
 import os
@@ -39,7 +41,6 @@ from modules.stackoverflow import search_stackoverflow
 # Current Chatbot Version and Name
 __version__ = '0.0.8'
 CHAT_BOT = "Pyppin"
-
 # ChatBot Class
 class ChatBot:
     def __init__(self, name=CHAT_BOT):
