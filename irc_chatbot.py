@@ -51,9 +51,9 @@ class MyBot(irc.bot.SingleServerIRCBot):
             connection.privmsg(self.channel, line)
 
 if __name__ == "__main__":
-    nickname = "MyBot"
+    nickname = "pyppin"
     server = "irc.libera.chat"
-    channel = "#coolbeans"
+    channel = "#linux"
 
     bot = MyBot(nickname, server, channel)
     bot.start()

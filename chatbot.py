@@ -22,7 +22,7 @@
 # SOFTWARE.
 
 import spacy
-from transformers import pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 # -*- coding: utf-8 -*-
 
 from nltk.tokenize import word_tokenize
@@ -42,11 +42,17 @@ from modules.random_quote import get_random_quote
 from modules.weather import handle_weather as get_weather
 from modules.g_search import handle_google_search
 from modules.stackoverflow import search_stackoverflow
+
 # Load SpaCy's English model
 nlp = spacy.load('en_core_web_sm')
 
-# Initialize a transformer pipeline for conversational tasks
-transformer_conversation = pipeline('conversational', model='microsoft/DialoGPT-medium')
+# Load the model and tokenizer
+model_name = "microsoft/DialoGPT-medium"
+model = AutoModelForCausalLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+# Create the conversational pipeline
+conversation_pipeline = pipeline('text-generation', model=model, tokenizer=tokenizer)
 
 # Current Chatbot Version and Name
 __version__ = '0.0.9'
@@ -71,13 +77,15 @@ class ChatBot:
 
     def generate_response(self, user_input):
         """ Generate a response using the transformer model """
-        conversation_input = {'conversation': user_input}
-        response = transformer_conversation(conversation_input)
-        return response[0]['generated_text']
+        inputs = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors="pt")
+        response = model.generate(inputs, max_length=1000, pad_token_id=tokenizer.eos_token_id)
+        output_text = tokenizer.decode(response[:, inputs.shape[-1]:][0], skip_special_tokens=True)
+        return output_text
 
     # Example method for fetching weather (to be implemented based on existing logic)
     def get_weather_info(self, location):
         return f'Fetching weather information for {location}...'
+
     def __init__(self, name=CHAT_BOT):
         self.name = name
         self.weather_api_key = os.getenv('WEATHER_API_KEY')
@@ -149,7 +157,7 @@ class ChatBot:
                         return random.choice(responses)
 
         # If no keyword is found, return a generic response
-        return "I'm sorry, I didn't understand what you said."
+        return self.generate_response(user_input)
 
 # Main CLI interface
 if __name__ == '__main__':
