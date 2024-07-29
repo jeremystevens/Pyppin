@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 # MIT License
 
 # Copyright (c) 2023 - Jeremy Stevens
@@ -23,13 +25,13 @@
 
 __version__ = '0.0.1-beta'
 import os
-import asyncio
+import time
+import aiohttp
+from datetime import datetime, timezone
 from twitchio.ext import commands
 from dotenv import load_dotenv
 from chatbot import ChatBot  # Import the ChatBot class
-import time
-import pyttsx3
-import pyautogui
+from functools import wraps
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,20 +43,50 @@ CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 BOT_PREFIX = os.getenv('BOT_PREFIX')
 CHANNEL = os.getenv('CHANNEL')
 
-# Initialize the ChatBot and TTS engine
+# Initialize the ChatBot
 chatbot = ChatBot()
-tts_engine = pyttsx3.init()
 
-# Dictionary to store user stats
-user_stats = {}
-user_join_times = {}
+# List of administrators
+administrators = ["admin1", "admin2", "admin3"]
+
+# Define a decorator for admin-only commands
+def admin_only(func):
+    @wraps(func)
+    async def wrapper(ctx: commands.Context, *args, **kwargs):
+        if ctx.author.name.lower() not in administrators:
+            await ctx.send(f"Sorry, {ctx.author.name}, you don't have permission to use this command.")
+            return
+        return await func(ctx, *args, **kwargs)
+    return wrapper
+
+# Function to fetch stream information
+async def get_stream_info(session):
+    url = f'https://api.twitch.tv/helix/streams?user_login={CHANNEL}'
+    headers = {
+        'Client-ID': CLIENT_ID,
+        'Authorization': f'Bearer {TMI_TOKEN}'
+    }
+    async with session.get(url, headers=headers) as response:
+        if response.status == 200:
+            data = await response.json()
+            print("API Response:", data)  # Debugging: Print the API response
+            if data['data']:
+                stream = data['data'][0]
+                return {
+                    "game": stream['game_name'],
+                    "start_time": stream['started_at']
+                }
+            else:
+                print("No stream data found.")
+        else:
+            print("Failed to fetch stream info:", response.status)
+        return None
 
 # Define your bot class
 class Bot(commands.Bot):
 
     def __init__(self):
         super().__init__(token=TMI_TOKEN, prefix=BOT_PREFIX, initial_channels=[CHANNEL])
-        self.loop.create_task(self.track_watch_time())
 
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
@@ -65,67 +97,20 @@ class Bot(commands.Bot):
         if message.echo:
             return
 
-        # Check if the message is a !say command
-        if message.content.startswith(f'{BOT_PREFIX}say '):
-            # Extract the text after !say
-            text_to_say = message.content[len(f'{BOT_PREFIX}say '):].strip()
-            # Send the text as a message in chat
-            await message.channel.send(f"Repeating: {text_to_say}")
-            # Handle TTS and key press
-            self.text_to_speech(text_to_say)
-        else:
-            # Process message using chatbot.py's ChatBot class
+        # Handle commands first
+        await self.handle_commands(message)
+
+        # If not a command, process the message using the chatbot
+        if not message.content.startswith(BOT_PREFIX):
             response = chatbot.respond(message.content)
             print(f'Response: {response}')  # Debug print statement
             await message.channel.send(response)
-        
-        # Update user stats (e.g., increment message count)
-        user = message.author.name
-        if user not in user_stats:
-            user_stats[user] = {'messages': 0, 'points': 0, 'watch_time': 0}
-        user_stats[user]['messages'] += 1
 
     async def event_join(self, channel, user):
-        # Greet the user when they join the chat
-        if user.name.lower() != self.nick.lower():  # Avoid greeting the bot itself
-            greeting_message = f"Welcome to the chat, {user.name}!"
-            await channel.send(greeting_message)
-        
-        # Record the join time
+        if user.name.lower() != self.nick.lower():
+            await channel.send(f"Welcome to the chat, {user.name}!")
+        user_join_times = {}
         user_join_times[user.name] = time.time()
-
-    async def event_part(self, channel, user):
-        # Calculate watch time when a user leaves
-        if user.name in user_join_times:
-            join_time = user_join_times.pop(user.name)
-            watch_time = time.time() - join_time
-            if user.name in user_stats:
-                user_stats[user.name]['watch_time'] += watch_time / 60  # Convert to minutes
-            else:
-                user_stats[user.name] = {'messages': 0, 'points': 0, 'watch_time': watch_time / 60}
-
-    async def track_watch_time(self):
-        while True:
-            # Periodically update watch time for users still in chat
-            await asyncio.sleep(60)
-            current_time = time.time()
-            for user, join_time in list(user_join_times.items()):
-                if user in user_stats:
-                    user_stats[user]['watch_time'] += (current_time - join_time) / 60  # Convert to minutes
-                    user_join_times[user] = current_time
-
-    def text_to_speech(self, text):
-        # Press and hold Shift+1
-        pyautogui.keyDown('shift')
-        pyautogui.keyDown('1')
-
-        # Speak the text
-        tts_engine.say(text)
-        tts_engine.runAndWait()
-
-        # Release Shift+1 after speaking
-        pyautogui.keyUp('1')
-        pyautogui.keyUp('shift')
 
     @commands.command(name='hello')
     async def hello(self, ctx):
@@ -133,6 +118,46 @@ class Bot(commands.Bot):
         # Generate a response using chatbot.py's ChatBot class
         response = chatbot.respond('hello')
         await ctx.send(response)
+
+    @commands.command(name='currentgame')
+    async def current_game(self, ctx):
+        async with aiohttp.ClientSession() as session:
+            info = await get_stream_info(session)
+            if info:
+                await ctx.send(f"The current game being played is: {info['game']}")
+            else:
+                await ctx.send("The stream is currently offline or no data is available.")
+
+    @commands.command(name='streamduration')
+    async def stream_duration(self, ctx):
+        async with aiohttp.ClientSession() as session:
+            info = await get_stream_info(session)
+            if info:
+                start_time = datetime.fromisoformat(info['start_time'][:-1]).replace(tzinfo=timezone.utc)
+                now = datetime.now(timezone.utc)
+                duration = now - start_time
+                await ctx.send(f"The stream has been live for: {duration}")
+            else:
+                await ctx.send("The stream is currently offline or no data is available.")
+
+    @commands.command(name='setgame')
+    @admin_only
+    async def set_game(self, ctx, *, game_name: str):
+        headers = {
+            'Client-ID': CLIENT_ID,
+            'Authorization': f'Bearer {TMI_TOKEN}',
+            'Content-Type': 'application/json'
+        }
+        data = {
+            'game_id': game_name
+        }
+        url = f'https://api.twitch.tv/helix/channels?broadcaster_id={ctx.author.id}'
+        async with aiohttp.ClientSession() as session:
+            async with session.patch(url, headers=headers, json=data) as response:
+                if response.status == 204:
+                    await ctx.send(f"Game updated to {game_name}")
+                else:
+                    await ctx.send("Failed to update the game. Please try again.")
 
 # Run the bot
 if __name__ == '__main__':

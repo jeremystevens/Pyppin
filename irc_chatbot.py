@@ -25,6 +25,11 @@
 
 __version__ = '0.0.2'
 
+# Changes in Version 0.0.2
+# - Added a check to `on_pubmsg` to ensure the bot only responds to messages directed at it.
+# - Stored the bot's nickname in `self.nickname` for easy reference.
+# - Stripped the bot's nickname from the message before passing it to the `ChatBot`.
+
 import irc.bot
 from chatbot import ChatBot  # Import the ChatBot class
 
@@ -34,26 +39,31 @@ class MyBot(irc.bot.SingleServerIRCBot):
         irc.bot.SingleServerIRCBot.__init__(self, server_list, nickname, nickname)
         self.channel = channel
         self.bot = ChatBot()  # Create an instance of ChatBot
+        self.nickname = nickname
 
     def on_welcome(self, connection, event):
         connection.join(self.channel)
 
     def on_pubmsg(self, connection, event):
         message = event.arguments[0]
-        response = self.bot.respond(message)  # Use ChatBot to get the response
+        # Check if the message starts with the bot's nickname
+        if message.startswith(self.nickname):
+            # Strip the nickname from the message
+            message = message[len(self.nickname):].strip()
+            response = self.bot.respond(message)  # Use ChatBot to get the response
 
-        # Split the response into separate lines
-        response_lines = response.split('\n')
+            # Split the response into separate lines
+            response_lines = response.split('\n')
 
-        # Send each line of the response as a separate PRIVMSG command
-        for line in response_lines:
-            # Send the response to the IRC channel
-            connection.privmsg(self.channel, line)
+            # Send each line of the response as a separate PRIVMSG command
+            for line in response_lines:
+                # Send the response to the IRC channel
+                connection.privmsg(self.channel, line)
 
 if __name__ == "__main__":
     nickname = "pyppin"
     server = "irc.libera.chat"
-    channel = "#linux"
+    channel = "#coolbeans"
 
     bot = MyBot(nickname, server, channel)
     bot.start()

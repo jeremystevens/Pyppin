@@ -20,6 +20,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+__version__ = '0.0.9-rc1'
+
+# Changes Made: in 0.0.9-rc1
+# =============================================================
+# Removed the incorrect transformer_conversation initialization.
+# Added the correct initialization of the model and tokenizer for DialoGPT.
+# Updated the generate_response method to use the correct model and tokenizer for generating responses.
+# Ensured the conversational pipeline is correctly created and used.
+# Added memory and context feature to maintain conversation history.
+# =============================================================
 
 import spacy
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -47,19 +57,32 @@ from modules.stackoverflow import search_stackoverflow
 nlp = spacy.load('en_core_web_sm')
 
 # Load the model and tokenizer
-model_name = "microsoft/DialoGPT-medium"
+model_name = "microsoft/DialoGPT-large"
 model = AutoModelForCausalLM.from_pretrained(model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Create the conversational pipeline
 conversation_pipeline = pipeline('text-generation', model=model, tokenizer=tokenizer)
 
-# Current Chatbot Version and Name
-__version__ = '0.0.9'
+# Bot Name
 CHAT_BOT = "Pyppin"
 
 # ChatBot Class
 class ChatBot:
+    def __init__(self, name=CHAT_BOT):
+        self.name = name
+        self.weather_api_key = os.getenv('WEATHER_API_KEY')
+        self.news_api_key = os.getenv('NEWS_API_KEY')
+        self.conversation_history = []
+
+    def get_greeting(self):
+        current_hour = datetime.datetime.now().hour
+        if current_hour < 12:
+            return "Good morning"
+        elif 12 <= current_hour < 18:
+            return "Good afternoon"
+        else:
+            return "Good evening"
 
     def process_input(self, user_input):
         """ Analyze user input using SpaCy and determine the response """
@@ -77,28 +100,17 @@ class ChatBot:
 
     def generate_response(self, user_input):
         """ Generate a response using the transformer model """
-        inputs = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors="pt")
+        self.conversation_history.append(user_input)
+        context = " ".join(self.conversation_history[-5:])  # Use last 5 interactions as context
+        inputs = tokenizer.encode(context + tokenizer.eos_token, return_tensors="pt")
         response = model.generate(inputs, max_length=1000, pad_token_id=tokenizer.eos_token_id)
         output_text = tokenizer.decode(response[:, inputs.shape[-1]:][0], skip_special_tokens=True)
+        self.conversation_history.append(output_text)
         return output_text
 
     # Example method for fetching weather (to be implemented based on existing logic)
     def get_weather_info(self, location):
         return f'Fetching weather information for {location}...'
-
-    def __init__(self, name=CHAT_BOT):
-        self.name = name
-        self.weather_api_key = os.getenv('WEATHER_API_KEY')
-        self.news_api_key = os.getenv('NEWS_API_KEY')
-
-    def get_greeting(self):
-        current_hour = datetime.datetime.now().hour
-        if current_hour < 12:
-            return "Good morning"
-        elif 12 <= current_hour < 18:
-            return "Good afternoon"
-        else:
-            return "Good evening"
 
     def respond(self, user_input):
         # Tokenize the user input
@@ -131,6 +143,7 @@ class ChatBot:
             for keyword, responses in keywords:
                 if phrase in keyword:
                     if phrase == "commands":
+                        command_descriptions = ["Command 1 description", "Command 2 description", "Command 3 description"]
                         return "\n".join(command_descriptions)
                     if phrase == "cat fact":
                         return get_random_cat_fact()
