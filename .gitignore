@@ -1,2 +1,15 @@
 
 README.md
+.venv/Lib/site-packages/_distutils_hack/__init__.py
+.venv/Lib/site-packages/_distutils_hack/__pycache__/__init__.cpython-310.pyc
+.venv/Lib/site-packages/_distutils_hack/__pycache__/override.cpython-310.pyc
+.venv/Lib/site-packages/_distutils_hack/override.py
+.venv/Lib/site-packages/distutils-precedence.pth
+.venv/Lib/site-packages/pip-24.2.dist-info/AUTHORS.txt
+.venv/Lib/site-packages/pip-24.2.dist-info/entry_points.txt
+.venv/Lib/site-packages/pip-24.2.dist-info/LICENSE.txt
+.venv/Lib/site-packages/pip-24.2.dist-info/METADATA
+.venv/Lib/site-packages/pip-24.2.dist-info/RECORD
+/.venv
+/__pycache__
+/modules/__pycache__
