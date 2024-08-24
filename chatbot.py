@@ -35,6 +35,8 @@ import spacy
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 # -*- coding: utf-8 -*-
 
+import nltk
+nltk.download('punkt') # Download the Punkt tokenizer for NLTK if not already downloaded
 from nltk.tokenize import word_tokenize
 import random
 import os
@@ -66,7 +68,6 @@ conversation_pipeline = pipeline('text-generation', model=model, tokenizer=token
 
 # Bot Name
 CHAT_BOT = "Pyppin"
-
 # ChatBot Class
 class ChatBot:
     def __init__(self, name=CHAT_BOT):
